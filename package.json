@@ -19,6 +19,7 @@
     "@genkit-ai/google-genai": "^1.22.0",
     "fastify": "^5.6.1",
     "genkit": "^1.22.0",
+    "mammoth": "^1.11.0",
     "zod": "^4.1.12"
   }
 }
