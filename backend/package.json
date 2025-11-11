@@ -17,9 +17,13 @@
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
     "@genkit-ai/google-genai": "^1.22.0",
+    "@google/generative-ai": "^0.24.1",
+    "@xmldom/xmldom": "^0.8.11",
     "fastify": "^5.6.1",
     "genkit": "^1.22.0",
+    "i": "^0.3.7",
+    "jszip": "^3.10.1",
     "mammoth": "^1.11.0",
-    "zod": "^4.1.12"
+    "npm": "^11.6.2"
   }
 }

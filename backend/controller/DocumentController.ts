@@ -4,8 +4,11 @@ export class DocumentController {
   constructor(private documentService: DocumentService) {}
 
   async getDocuments(request: any, reply: any) {
-    const docs = await this.documentService.getDocuments();
-    reply.send(docs);
+    try {
+      
+    } catch (error) {
+      
+    }
   }
 
   async createDocument(request: any, reply: any) {
