@@ -4,7 +4,7 @@ import multipart from "@fastify/multipart";
 import cors from "@fastify/cors"
 import fastifyCookie from "@fastify/cookie";
 import pluginS3 from "./config/objectStorage";
-
+import QueueBullMQ from './config/bullmq/QueueBullMQ';
 
 const fastify = Fastify({
     logger: true,
@@ -30,6 +30,16 @@ fastify.register(pluginS3, {
 })
 fastify.register(multipart)
 fastify.register(documentRoute);
+
+fastify.register(QueueBullMQ, {
+    connection: {
+        host: Bun.env.REDIS_HOST!,
+        password: Bun.env.REDIS_PASSWORD!,
+        port: Number(Bun.env.REDIS_PORT!)
+    },
+    name: "file",
+    concurrency: 3,
+})
 
 
 fastify.get("/getURL", async (req, res) => {
