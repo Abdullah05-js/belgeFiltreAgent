@@ -1,9 +1,16 @@
 export interface BaseResponse {
     success: boolean
-    data: ""
-    error: Error | null
+    data: any
+    message: string
 }
 
 export interface BaseInput {
     fileURL: string,
 }
+
+
+export interface BaseErr {
+    code: number
+    message: string
+}
+

@@ -8,14 +8,16 @@ import pluginS3 from "./config/objectStorage";
 
 const fastify = Fastify({
     logger: true,
+    trustProxy: true,
 });
 
-fastify.register(cors, {
-    origin: "http://localhost:3000", // frontend URL
+await fastify.register(cors, {
+    origin: "http://localhost:3000", // your frontend origin
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-})
+    credentials: true,
+});
+
 fastify.register(fastifyCookie, {
     hook: "onRequest"
 })
@@ -38,7 +40,7 @@ fastify.get("/getURL", async (req, res) => {
 })
 
 
-fastify.listen({ port: 5000 }, (err, address) => {
+fastify.listen({ port: 5000, host: "0.0.0.0" }, (err, address) => {
     if (err) {
         console.error(err);
         process.exit(1);

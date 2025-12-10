@@ -22,13 +22,18 @@ interface IInput {
     fileURL: string;
 }
 
+export interface FilteredDocumentResult {
+    category: CategoryKey;
+    data: any; // This will be the parsed data that matches the category schema
+}
+
 
 export const FilterDocumentFlow = ai.defineFlow({
     name: "FilterDocumentFlow",
     inputSchema: z.object({
         fileURL: z.string().describe("Object storage'dan dosya bağlantısı"),
     }),
-}, async (input: IInput) => {
+}, async (input: IInput): Promise<FilteredDocumentResult> => {
     try {
 
         const file = await fetch(input.fileURL);
@@ -68,7 +73,8 @@ export const FilterDocumentFlow = ai.defineFlow({
             throw new Error("undefined category")
         }
 
-        const selectedCategory = (Categorys[resp.output.category]).output;
+        const categoryKey = resp.output.category;
+        const selectedCategory = Categorys[categoryKey];
 
         const response = await ai.generate({
             prompt: `
@@ -78,23 +84,31 @@ export const FilterDocumentFlow = ai.defineFlow({
          Document body:
         ${result.value}
          `,
-            output: { schema: selectedCategory },
+            output: { schema: selectedCategory.output },
         });
 
-    
+        if (!response.output) {
+            throw new Error("Failed to parse document data");
+        }
 
-        return response.output
+        return {
+            category: categoryKey,
+            data: response.output
+        };
 
     } catch (error) {
         if (error instanceof z.ZodError) {
-            console.error("Validation Error:", error.errors);
-        } else {
-            console.error("Flow Error:", (error as Error).message);
+            console.error("Validation Error:", error.message);
+            throw {
+                data: "",
+                success: false,
+                message: error.message
+            } as BaseResponse;
         }
         throw {
             data: "",
             success: false,
-            error: error
+            message: (error as Error).message
         } as BaseResponse;
     }
 });
