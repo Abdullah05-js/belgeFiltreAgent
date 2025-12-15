@@ -2,7 +2,7 @@ import z from 'zod';
 import { UniversitiesInKocaeli } from './shared';
 import { Paragraph } from 'docx';
 
-export const CategoryKey = "YETERLIK SINAVI JÜRI BELIRLEME FORMU (DOKTORA)"
+export const DR08CategoryKey = "YETERLIK SINAVI JÜRI BELIRLEME FORMU (DOKTORA)"
 
 export const DR08Schema = z.object({
     student: z.object({
@@ -23,9 +23,9 @@ export const DR08Schema = z.object({
     isAccept: z.boolean().describe("ANABILIM DALI BAŞKANI ONAYI")
 })
 
-export type DR08Schema = z.infer<typeof DR08Schema>
+export type IDR08Schema = z.infer<typeof DR08Schema>
 
-export const getDocxOutput = (data: DR08Schema) => {
+export const getDR08DocxOutput = (data: IDR08Schema) => {
 
     return new Paragraph({
 

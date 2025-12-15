@@ -2,7 +2,7 @@ import type { Job } from "bullmq";
 import type { IJob } from "./QueueBullMQ";
 import { FilterDocumentFlow } from "../../flow/FilterDocumentFlow";
 import type { BaseResponse } from "../../types/types";
-import { Categorys } from "../../flow/category";
+import { Categorys } from "../../categorys";
 
 export default async function (job: Job<IJob>) {
     try {

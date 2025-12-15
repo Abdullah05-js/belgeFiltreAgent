@@ -1,7 +1,7 @@
 import z from 'zod';
 import { Paragraph } from 'docx';
 
-export const CategoryKey = "TEZ SAVUNMASI JÜRI ORTAK RAPORU (TEZLI YÜKSEK LISANS)"
+export const YL09CategoryKey = "TEZ SAVUNMASI JÜRI ORTAK RAPORU (TEZLI YÜKSEK LISANS)"
 
 const NoChangeSchema = z.object({
     tezBasligiDegisikligi: z.literal("hayir"),
@@ -12,7 +12,7 @@ const ChangeSchema = z.object({
     yeniTezBasligiTR: z.string().min(1, "Türkçe tez başlığı zorunludur").describe("DEĞIŞTIRILEN TEZ BAŞLIĞI"),
 });
 
-export const YZ09Schema = z.object({
+export const YL09Schema = z.object({
     student: z.object({
         fullName: z.string().describe("öğrenci Adı ve Soyadı."),
         no: z.string().describe("öğrenci No."),
@@ -30,9 +30,9 @@ export const YZ09Schema = z.object({
     isAccept: z.boolean().describe("JÜRI ORTAK KARARI ")
 })
 
-export type IYZ09Schema = z.infer<typeof YZ09Schema>
+export type IYL09Schema = z.infer<typeof YL09Schema>
 
-export const getDocxOutput = (data: IYZ09Schema) => {
+export const getYL09DocxOutput = (data: IYL09Schema) => {
     return new Paragraph({
 
     })

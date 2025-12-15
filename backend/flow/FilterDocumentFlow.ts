@@ -1,10 +1,9 @@
-import { Categorys, type CategoryName } from "./category";
+import { Categorys, type CategoryName } from "../categorys";
 import type { BaseResponse } from "../types/types";
 import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import z from 'zod';
 import { PDFDocument } from 'pdf-lib'
-import type { IDocuments } from "../models/Documents";
 
 const model = google('gemini-2.5-flash')
 const temperature = 0

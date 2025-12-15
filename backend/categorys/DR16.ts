@@ -1,9 +1,9 @@
 import z from 'zod';
 import { Paragraph } from 'docx';
 
-export const CategoryKey = "TEZ SAVUNMA JÜRI ÖNERI FORMU (DOKTORA)"
+export const DR16CategoryKey = "TEZ SAVUNMA JÜRI ÖNERI FORMU (DOKTORA)"
 
-export const DR08Schema = z.object({
+export const DR16Schema = z.object({
     student: z.object({
         fullName: z.string().describe("öğrenci Adı ve Soyadı."),
         no: z.string().describe("öğrenci No."),
@@ -27,9 +27,9 @@ export const DR08Schema = z.object({
     })).describe(`kapsamı dışında bulunan üniversitelerin asil üyeleri.`),
 })
 
-export type DR08Schema = z.infer<typeof DR08Schema>
+export type IDR16Schema = z.infer<typeof DR16Schema>
 
-export const getDocxOutput = (data: DR08Schema) => {
+export const getDR16DocxOutput = (data: IDR16Schema) => {
     return new Paragraph({
 
     })
