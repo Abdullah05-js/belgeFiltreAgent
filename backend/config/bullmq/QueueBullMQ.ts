@@ -15,6 +15,8 @@ interface IOptions {
 
 export interface IJob {
     fileURL: string
+    fileID: string
+    _id: string
 }
 
 async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
@@ -69,13 +71,21 @@ async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
             }
         );
 
+        worker.on('failed', (job, err) => {
+            if (job && job.attemptsMade === job.opts.attempts) {
+                // error queue ekle ve orda   yine  job.data._id kullanrak db de error durumunu güncelle 
+            }
+        })
 
-        await queue.upsertJobScheduler('test', {
-            every: 1000 * 10,
-        }, {
-            name: "test-1",
-            data: { fileURL: "pdjfvodsıfjosdıj.com" },
-        });
+        const scheduler = await queue.getJobScheduler('test');
+        console.log('Current job scheduler:', scheduler);
+
+        // await queue.upsertJobScheduler('test', {
+        //     every: 1000 * 60 * 30,
+        // }, {
+        //     name: "test-1",
+        //     data: { fileURL: "https://cdn.thodex.live/20240703_3811c_yl%20-%20-9-tez-savunmasi-juri-ortak-raporu_235116001_Saip%20Onurhan%20KADIO%C4%9ELU%20(1).pdf" },
+        // });
 
 
 

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { DocumentController } from '../controller/DocumentController';
 import { DocumentService } from '../service/DocumentService';
-import { DocumentRepository } from '../repository/DocumentRepository';
+import { DocumentRepository } from '../repository/DocumentsRepository';
 import type { FastifyRequest } from 'fastify/types/request';
 import type { getDocumentSchema } from './schema/documentSchema';
 

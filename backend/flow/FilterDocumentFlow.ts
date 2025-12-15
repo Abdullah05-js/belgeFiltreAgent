@@ -1,99 +1,90 @@
-import { googleAI } from "@genkit-ai/google-genai";
-import { genkit, z } from "genkit";
-import JSZip from "jszip";
-import mammoth from "mammoth";
-import { DOMParser } from "@xmldom/xmldom";
-import { Categorys, type CategoryKey } from "./category";
+import { Categorys, type CategoryName } from "./category";
 import type { BaseResponse } from "../types/types";
+import { google } from '@ai-sdk/google';
+import { generateObject } from 'ai';
+import z from 'zod';
+import { PDFDocument } from 'pdf-lib'
+import type { IDocuments } from "../models/Documents";
 
-
-
-const ai = genkit({
-    plugins: [googleAI({
-        apiKey: process.env.GEMINI_API_KEY
-    })],
-    model: googleAI.model("gemini-2.5-flash", {
-        temperature: 0,
-    }),
-})
-
+const model = google('gemini-2.5-flash')
+const temperature = 0
 
 interface IInput {
     fileURL: string;
 }
 
-export interface FilteredDocumentResult {
-    category: CategoryKey;
-    data: any; // This will be the parsed data that matches the category schema
-}
 
-
-export const FilterDocumentFlow = ai.defineFlow({
-    name: "FilterDocumentFlow",
-    inputSchema: z.object({
-        fileURL: z.string().describe("Object storage'dan dosya bağlantısı"),
-    }),
-}, async (input: IInput): Promise<FilteredDocumentResult> => {
+export const FilterDocumentFlow = async (input: IInput) => {
     try {
 
         const file = await fetch(input.fileURL);
-        const arrayBuffer = await file.arrayBuffer();
-        const zip = await JSZip.loadAsync(Buffer.from(arrayBuffer));
-        const headerFiles = Object.keys(zip.files).filter(f => f.match(/word\/header\d*\.xml$/));
-        const result = await mammoth.convertToHtml({ buffer: Buffer.from(arrayBuffer) });
+        let arrayBuffer: ArrayBuffer | null = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer)
+        const newPdfDoc = await PDFDocument.create();
+        const [firstPage] = await newPdfDoc.copyPages(pdf, [0]); // 0 is the first page
+        newPdfDoc.addPage(firstPage);
+        const pdfBytes = await newPdfDoc.save();
 
-        let formatedHeader = "";
+        console.log("the file size: ", arrayBuffer.byteLength / 1024 / 1024); // MB
 
-        if (headerFiles.length > 0) {
-            headerFiles.sort();
-            const firstHeaderFile = headerFiles[0]!;
-            const xmlText = await zip.file(firstHeaderFile)!.async("text");
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-            const text = xmlDoc.documentElement.textContent;
-            formatedHeader = text.replace("(", " (").replace(")", ") ").replace(")", ")\n").replace(/:\s*/g, ": ").replace(/([0-9])([A-ZÇĞİÖŞÜ])/g, "$1\n$2")
-        }
+        const categoryList = Object.keys(Categorys) as CategoryName[]
 
-        console.log("Extracted Text Length:", formatedHeader);
-
-        const categoryList = Object.keys(Categorys) as CategoryKey[]
-
-        const resp = await ai.generate({
+        const result = await generateObject({
+            model,
+            temperature,
             system: "You are an academic document classifier. Select the correct report category from the given list.",
-            prompt: formatedHeader,
-            output: {
-                schema: z.object({
-                    category: z.enum(categoryList as [CategoryKey, ...CategoryKey[]]).describe("category of document"),
-                }),
-            },
+            messages: [
+                {
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'file',
+                            data: pdfBytes,
+                            mediaType: 'application/pdf',
+                        },
+                    ],
+                },
+            ],
+            schema: z.object({
+                category: z.enum(categoryList as [CategoryName, ...CategoryName[]]).describe("category of document"),
+            }),
+            output: "object"
         });
 
-
-        if (!resp.output?.category) {
+        if (!result?.object?.category) {
             throw new Error("undefined category")
         }
 
-        const categoryKey = resp.output.category;
+        const categoryKey = result.object.category as CategoryName;
         const selectedCategory = Categorys[categoryKey];
 
-        const response = await ai.generate({
-            prompt: `
-         Document header:
-        ${formatedHeader}
-
-         Document body:
-        ${result.value}
-         `,
-            output: { schema: selectedCategory.output },
+        const response = await generateObject({
+            model,
+            temperature,
+            system: "extract the data according to the schema",
+            messages: [
+                {
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'file',
+                            data: arrayBuffer,
+                            mediaType: 'application/pdf',
+                        },
+                    ],
+                },
+            ],
+            schema: selectedCategory.output,
+            output: "object"
         });
 
-        if (!response.output) {
+        if (!response.object) {
             throw new Error("Failed to parse document data");
         }
 
         return {
             category: categoryKey,
-            data: response.output
+            data: response.object
         };
 
     } catch (error) {
@@ -111,6 +102,6 @@ export const FilterDocumentFlow = ai.defineFlow({
             message: (error as Error).message
         } as BaseResponse;
     }
-});
+};
 
 

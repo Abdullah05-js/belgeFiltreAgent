@@ -1,7 +1,10 @@
-import { Document } from '../Document';
+import type { CategoryName } from "../../flow/category";
+import type { IDocuments } from "../../models/Documents";
 
 export interface IDocumentRepository {
-  findAll(): Promise<Document[]>;
-  create(data: Partial<Document>): Promise<Document>;
-  // ... further data-access signatures
+  findAll(limit: number): Promise<IDocuments[]>;
+  create(docType: string,
+    categoryName: CategoryName,
+    data: IDocuments): Promise<IDocuments>;
+  getPagination(page: number, limit: number, order: boolean): Promise<IDocuments[]>
 }

@@ -14,3 +14,8 @@ export interface BaseErr {
     message: string
 }
 
+
+export interface IWithTimestamps {
+    createdAt?: Date;
+    updatedAt?: Date;
+}

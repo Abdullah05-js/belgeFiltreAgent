@@ -5,6 +5,9 @@
 // import JSZip from "jszip";
 // import { DOMParser } from "@xmldom/xmldom";
 
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
+
 // const ai = genkit({
 //     plugins: [googleAI({
 //         apiKey: process.env.GEMINI_API_KEY
@@ -85,19 +88,203 @@
 //     }
 // });
 
-const documentURLs = ["https://cdn.thodex.live/235103012_Ali_Enes_Temizkan.docx", "https://cdn.thodex.live/20240703_3811c_yl---9-tez-savunmasi-juri-ortak-raporu_235116001_Saip%20Onurhan%20KADIO%C4%9ELU%20(1).docx", "https://cdn.thodex.live/20240930_165e5_tyl---11-proje-konusu-bildirim-formu-117.docx", "https://cdn.thodex.live/20240703_3811c_yl---9-tez-savunmasi-juri-ortak-raporu_235116001_Saip%20Onurhan%20KADIO%C4%9ELU.docx"]
-for (const documenturl of documentURLs) {
-
-    const worker = new Worker("./worker.ts")
-    worker.postMessage({
-        fileURL: documenturl
-    })
-
-    worker.onmessage = (event) => {
-        console.log("-------------------------------------------------\n");
-        console.log(event.data);
-        console.log("-------------------------------------------------\n");
-    }
-}
 
 
+// const file = await Bun.file("./ödev.pdf").arrayBuffer()
+// const result = await generateText({
+//     model: google('gemini-2.5-flash'),
+//     messages: [
+//         {
+//             role: 'user',
+//             content: [
+//                 {
+//                     type: 'text',
+//                     text: 'burda ne görüyorsun ',
+//                 },
+//                 {
+//                     type: 'file',
+//                     data: file,
+//                     mediaType: 'application/pdf',
+//                 },
+//             ],
+//         },
+//     ],
+// });
+
+// console.log(result.text, "\n----------------------------------\n", result.content);
+
+
+import { AlignmentType, BorderStyle, Document, Header, ImageRun, Packer, PageBreak, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, type ITableCellBorders } from "docx";
+
+const file = await Bun.file("./karar_başlık.png").arrayBuffer()
+
+const noBorders = {
+    top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+    bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+    left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+    right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+};
+
+const table = new Table({
+    width: {
+        size: 100 * 50,
+        type: WidthType.PERCENTAGE,
+    },
+    rows: [
+        // --- ROW 1: HEADERS ---
+        new TableRow({
+            children: [
+                new TableCell({
+                    borders: noBorders,
+                    width: { size: 50 * 50, type: WidthType.PERCENTAGE },
+                    children: [
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: "TOPLANTI NO",
+                                    bold: true,
+                                    size: 20,
+                                    underline: { type: "single" },
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+                new TableCell({
+                    borders: noBorders,
+                    width: { size: 50 * 50, type: WidthType.PERCENTAGE },
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.RIGHT, // Right Align
+                            children: [
+                                new TextRun({
+                                    text: "TOPLANTI TARİHİ",
+                                    bold: true,
+                                    size: 20,
+                                    underline: { type: "single" },
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+            ],
+        }),
+
+        // --- ROW 2: DATA ---
+        new TableRow({
+            children: [
+                new TableCell({
+                    borders: noBorders,
+                    width: { size: 50 * 50, type: WidthType.PERCENTAGE },
+                    children: [
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: "2023/49",
+                                    bold: true,
+                                    size: 18,
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+                new TableCell({
+                    borders: noBorders,
+                    width: { size: 50 * 50, type: WidthType.PERCENTAGE },
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.RIGHT, // Right Align
+                            children: [
+                                new TextRun({
+                                    text: "27/12/2023",
+                                    bold: true,
+                                    size: 18,
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+            ],
+        }),
+    ],
+});
+
+// --- DOCUMENT DEFINITION ---
+const doc = new Document({
+    sections: [
+        {
+            properties: {
+                titlePage: true,
+                page: {
+                    margin: {
+                        left: 20 * 20,
+                        right: 20 * 20,
+                        top: 20 * 20,
+                    }
+                }
+            },
+            headers: {
+                first: new Header({
+                    children: [],
+                }),
+
+                default: new Header({
+                    children: [
+                        table
+                    ],
+                }),
+            },
+            children: [
+                // 1. Image Paragraph
+                new Paragraph({
+                    children: [
+                        new ImageRun({
+                            type: "png",
+                            data: file,
+                            transformation: {
+                                width: 780,
+                                height: 200,
+                            }
+                        }),
+                    ],
+                }),
+
+                // 2. Spacer
+                new Paragraph({ text: "" }),
+
+                // 3. "Sayı" Paragraph
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Sayı : 14029370.050.02.04-",
+                            bold: true,
+                            size: 24
+                        }),
+                    ]
+                }),
+
+                // 4. "Konu" Paragraph
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Konu : Enstitü Yönetim Kurulu Toplantısı Kararları",
+                            bold: true,
+                            size: 24
+                        }),
+                    ]
+                }),
+
+                new Paragraph({ text: "" }),
+
+                // 6. THE TABLE (Now a direct child of the section, NOT inside a Paragraph)
+                table,
+            
+
+            ],
+        },
+    ],
+});
+
+Packer.toBuffer(doc).then((buffer) => {
+    Bun.write("My Document.docx", buffer);
+});
