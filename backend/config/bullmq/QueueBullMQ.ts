@@ -15,8 +15,8 @@ interface IOptions {
 
 export interface IJob {
     fileURL: string
-    fileID: string
-    _id: string
+    // fileID: string
+    // _id: string
 }
 
 async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
@@ -34,18 +34,19 @@ async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
 
         const queue = new Queue<IJob>(options.name, {
             connection: options.connection,
+
             defaultJobOptions: {
                 removeOnComplete: true,
+                removeOnFail: true,
                 attempts: 3,
                 backoff: {
                     type: "fixed",
-                    delay: 2000
+                    delay: 1000 * 60 * 3
                 },
-
             }
         })
 
-        await queue.setGlobalConcurrency(4);
+        await queue.setGlobalConcurrency(options.concurrency);
         await queue.removeGlobalRateLimit();
         fastify.decorate("BullMQueue", queue)
 
@@ -68,17 +69,24 @@ async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
             {
                 connection: options.connection,
                 concurrency: options.concurrency,
+                limiter: {
+                    max: 1,
+                    duration: 1000 * 60 * 1
+                },
             }
         );
 
         worker.on('failed', (job, err) => {
-            if (job && job.attemptsMade === job.opts.attempts) {
-                // error queue ekle ve orda   yine  job.data._id kullanrak db de error durumunu güncelle 
+            if (!job) return
+
+            if (job.attemptsMade >= job.opts.attempts!) {
+                console.log('Final failure, removing job:', job.id)
+                //dbye failed olarak işaretle 
             }
         })
 
-        const scheduler = await queue.getJobScheduler('test');
-        console.log('Current job scheduler:', scheduler);
+        await queue.obliterate({ force: true })
+
 
         // await queue.upsertJobScheduler('test', {
         //     every: 1000 * 60 * 30,
@@ -88,6 +96,13 @@ async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
         // });
 
 
+
+        await queue.addBulk([
+            {
+                name: "job-1",
+                data: { fileURL: `https://cdn.thodex.live/test/Tez%20Savunma%20Sinavi%20Juri%20Onerisi%20Talebi%20hk.DR-16.pdf` },
+            }
+        ])
 
 
         fastify.addHook("onClose", async () => {

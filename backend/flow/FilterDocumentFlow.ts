@@ -13,7 +13,12 @@ interface IInput {
 }
 
 
-export const FilterDocumentFlow = async (input: IInput) => {
+
+
+export const FilterDocumentFlow = async (input: IInput): Promise<{
+    category: CategoryName,
+    data: any
+}> => {
     try {
 
         const file = await fetch(input.fileURL);
@@ -53,6 +58,7 @@ export const FilterDocumentFlow = async (input: IInput) => {
         if (!result?.object?.category) {
             throw new Error("undefined category")
         }
+        console.log("------\n out from",1);
 
         const categoryKey = result.object.category as CategoryName;
         const selectedCategory = Categorys[categoryKey];
@@ -76,6 +82,7 @@ export const FilterDocumentFlow = async (input: IInput) => {
             schema: selectedCategory.output,
             output: "object"
         });
+        console.log("------\n out from",2);
 
         if (!response.object) {
             throw new Error("Failed to parse document data");
@@ -89,12 +96,14 @@ export const FilterDocumentFlow = async (input: IInput) => {
     } catch (error) {
         if (error instanceof z.ZodError) {
             console.error("Validation Error:", error.message);
+
             throw {
                 data: "",
                 success: false,
                 message: error.message
             } as BaseResponse;
         }
+
         throw {
             data: "",
             success: false,

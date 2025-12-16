@@ -17,17 +17,16 @@ export const Categorys = {
         docx: getDR08DocxOutput
     },
 
-
-
-
-
-    "UNKNOWN DOCUMENT TYPE": {
+    "UNKNOWN DOCUMENT": {
         output: z.object({
             message: z.string().describe("the reason why this document unknown")
         }),
         docx: () => { }
     }
 }
+
+
+
 
 
 export type CategoryName = keyof typeof Categorys;

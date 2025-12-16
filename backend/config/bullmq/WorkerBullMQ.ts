@@ -2,7 +2,11 @@ import type { Job } from "bullmq";
 import type { IJob } from "./QueueBullMQ";
 import { FilterDocumentFlow } from "../../flow/FilterDocumentFlow";
 import type { BaseResponse } from "../../types/types";
-import { Categorys } from "../../categorys";
+import { Categorys, type CategoryName } from "../../categorys";
+import { Packer } from "docx";
+import generateDocx from "../../lib/generateDocx";
+
+
 
 export default async function (job: Job<IJob>) {
     try {
@@ -13,20 +17,16 @@ export default async function (job: Job<IJob>) {
             fileURL: job.data.fileURL
         })
 
-        switch (category) {
-            case "UNKNOWN DOCUMENT TYPE":
-                const parsed = Categorys[category].output.parse(data)
+        const docxData = Categorys[category].docx(data, 1)!
 
-                //update the db using job._id
+        const doc = generateDocx(docxData)
 
-                break;
-
-            default:
-                break;
-        }
-
+        Packer.toBuffer(doc).then((buffer) => {
+            Bun.write("AI_RESULT.docx", buffer);
+        });
 
     } catch (error) {
+
         console.log((error as BaseResponse).message);
         throw error as BaseResponse
     }

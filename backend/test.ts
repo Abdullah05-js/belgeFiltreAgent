@@ -249,10 +249,8 @@ const doc = new Document({
                     ],
                 }),
 
-                // 2. Spacer
                 new Paragraph({ text: "" }),
 
-                // 3. "Sayı" Paragraph
                 new Paragraph({
                     children: [
                         new TextRun({
@@ -263,7 +261,6 @@ const doc = new Document({
                     ]
                 }),
 
-                // 4. "Konu" Paragraph
                 new Paragraph({
                     children: [
                         new TextRun({
@@ -276,9 +273,9 @@ const doc = new Document({
 
                 new Paragraph({ text: "" }),
 
-                // 6. THE TABLE (Now a direct child of the section, NOT inside a Paragraph)
                 table,
-            
+
+
 
             ],
         },

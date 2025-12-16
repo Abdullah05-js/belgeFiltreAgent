@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import { documentRoute } from './route/documentRoute';
+
 import multipart from "@fastify/multipart";
 import cors from "@fastify/cors"
 import fastifyCookie from "@fastify/cookie";
@@ -29,7 +29,7 @@ fastify.register(pluginS3, {
     endpoint: process.env.BUCKET_URL || ""
 })
 fastify.register(multipart)
-fastify.register(documentRoute);
+
 
 fastify.register(QueueBullMQ, {
     connection: {
@@ -38,7 +38,7 @@ fastify.register(QueueBullMQ, {
         port: Number(Bun.env.REDIS_PORT!)
     },
     name: "file",
-    concurrency: 3,
+    concurrency: 1,
 })
 
 
