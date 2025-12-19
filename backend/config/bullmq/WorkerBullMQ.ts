@@ -2,13 +2,13 @@ import type { Job } from "bullmq";
 import type { IJob } from "./QueueBullMQ";
 import { FilterDocumentFlow } from "../../flow/FilterDocumentFlow";
 import type { BaseResponse } from "../../types/types";
-import { Categorys, type CategoryName } from "../../categorys";
-import { Packer } from "docx";
+import { repo } from "../bullmq/QueueBullMQ"
+import { Categorys } from "../../categorys";
 import generateDocx from "../../lib/generateDocx";
+import { Packer } from "docx";
 
 
-
-export default async function (job: Job<IJob>) {
+export default async function workertest(job: Job<IJob>) {
     try {
 
         console.log("working on ", job.name, job.data.fileURL);
@@ -17,16 +17,44 @@ export default async function (job: Job<IJob>) {
             fileURL: job.data.fileURL
         })
 
-        const docxData = Categorys[category].docx(data, 1)!
+        const parsedData = Categorys[category].output.safeParse(data)
 
-        const doc = generateDocx(docxData)
+        if (!parsedData.success) throw {
+            data: "",
+            success: false,
+            message: parsedData.error.message
+        } as BaseResponse;
+        console.log("-----\n am out boys", job.name);
+        await repo.editDocumentSuccess(job.name, {
+            categoryName: category,
+            data: parsedData.data,
+        })
+        console.log("----\n last time ma here ");
+        const jobRecord = await repo.getByID(job.name)
 
-        Packer.toBuffer(doc).then((buffer) => {
-            Bun.write("AI_RESULT.docx", buffer);
-        });
+        if (jobRecord.success.length + jobRecord.error.length == jobRecord.totalCount) {
+            const successRecords = jobRecord.success.sort((a, b) => a.categoryName.localeCompare(b.categoryName)).map((doc, index) => {
+                return Categorys[doc.categoryName].docx(doc.data, index + 1)
+            })
+
+
+            if (successRecords.length > 0) {
+                const doc = generateDocx(successRecords)
+                Packer.toBuffer(doc).then((buffer) => {
+                    Bun.write(`AI_RESULT-${(new Date()).toDateString()}.docx`, buffer);
+                });
+            }
+        }
+
+        // const docxData = Categorys[category].docx(data, 1)!
+
+        // const doc = generateDocx(docxData)
+
+        // Packer.toBuffer(doc).then((buffer) => {
+        //     Bun.write("AI_RESULT.docx", buffer);
+        // });
 
     } catch (error) {
-
         console.log((error as BaseResponse).message);
         throw error as BaseResponse
     }

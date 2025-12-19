@@ -1,17 +1,21 @@
 import { Categorys, type CategoryName } from "../categorys";
 import type { BaseResponse } from "../types/types";
-import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import z from 'zod';
 import { PDFDocument } from 'pdf-lib'
+import { createHuggingFace } from "@ai-sdk/huggingface";
+import { createMistral } from "@ai-sdk/mistral";
 
-const model = google('gemini-2.5-flash')
+// const model = google('gemini-2.5-flash')
 const temperature = 0
+const openai = createMistral({
+    apiKey: "yMdLb3wAD2fu959Ik4CHY2s92uKbxicg"
+})
+const model = openai("mistral-large-latest")
 
 interface IInput {
     fileURL: string;
 }
-
 
 
 
@@ -43,7 +47,7 @@ export const FilterDocumentFlow = async (input: IInput): Promise<{
                     content: [
                         {
                             type: 'file',
-                            data: pdfBytes,
+                            data: new URL(input.fileURL),
                             mediaType: 'application/pdf',
                         },
                     ],
@@ -58,7 +62,7 @@ export const FilterDocumentFlow = async (input: IInput): Promise<{
         if (!result?.object?.category) {
             throw new Error("undefined category")
         }
-        console.log("------\n out from",1);
+        console.log("------\n out from", 1);
 
         const categoryKey = result.object.category as CategoryName;
         const selectedCategory = Categorys[categoryKey];
@@ -73,7 +77,7 @@ export const FilterDocumentFlow = async (input: IInput): Promise<{
                     content: [
                         {
                             type: 'file',
-                            data: arrayBuffer,
+                            data: new URL(input.fileURL),
                             mediaType: 'application/pdf',
                         },
                     ],
@@ -82,7 +86,7 @@ export const FilterDocumentFlow = async (input: IInput): Promise<{
             schema: selectedCategory.output,
             output: "object"
         });
-        console.log("------\n out from",2);
+        console.log("------\n out from", 2);
 
         if (!response.object) {
             throw new Error("Failed to parse document data");
@@ -96,6 +100,7 @@ export const FilterDocumentFlow = async (input: IInput): Promise<{
     } catch (error) {
         if (error instanceof z.ZodError) {
             console.error("Validation Error:", error.message);
+
 
             throw {
                 data: "",

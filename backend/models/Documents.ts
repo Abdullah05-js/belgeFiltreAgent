@@ -1,40 +1,61 @@
-import z from 'zod';
-import { doktoraSavunmaOutput, yuksekLisansKonuBildirimiOutput, yuksekLisansSavunmaOutput, type CategoryName } from '../flow/category';
 import mongoose, { Schema } from 'mongoose';
 import type { IWithTimestamps } from '../types/types';
+import type { CategoryName } from '../categorys';
 
 
+
+export interface SuccessDocument {
+    categoryName: CategoryName;
+    data: any;
+}
 
 export interface IDocumentRecord extends IWithTimestamps {
     _id: mongoose.Types.ObjectId;
-    docType: string;
-    categoryName: CategoryName;
-    data: IDocuments;
+    totalCount: number
+    success: {
+        categoryName: CategoryName;
+        data: any;
+    }[]
+    error: string[]
+    outputKey: string
 }
 
-const DocumentsSchema = new Schema<IDocumentRecord>(
+export const DocumentsSchema = new Schema<IDocumentRecord>(
     {
-        docType: {
+        outputKey: {
             type: String,
-            required: true,
-            index: true,
+            required: false,
+            default: ""
         },
 
-        categoryName: {
-            type: String,
+        totalCount: {
+            type: Number,
             required: true,
-            index: true,
         },
 
-        // ZOD PAYLOAD
-        data: {
-            type: Schema.Types.Mixed,
-            required: true,
+        error: {
+            type: [String],
+            default: [],
+        },
+
+        success: {
+            type: [
+                {
+                    categoryName: {
+                        type: String,
+                        required: true,
+                    },
+                    data: {
+                        type: Schema.Types.Mixed,
+                        required: true,
+                    },
+                },
+            ],
+            default: [],
         },
     },
     {
         timestamps: true,
-        strict: true, // ✅ now safe to turn ON
     }
 );
 
@@ -43,7 +64,3 @@ export const DocumentsModel = mongoose.model(
     DocumentsSchema
 );
 
-export type IDocuments =
-    | z.infer<typeof yuksekLisansSavunmaOutput>
-    | z.infer<typeof doktoraSavunmaOutput>
-    | z.infer<typeof yuksekLisansKonuBildirimiOutput>;

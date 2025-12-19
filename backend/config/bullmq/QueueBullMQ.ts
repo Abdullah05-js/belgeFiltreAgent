@@ -1,6 +1,12 @@
 import type { FastifyInstance } from "fastify"
 import { Queue, QueueEvents, Worker } from 'bullmq';
 import fp from 'fastify-plugin';
+import DocumentsRepository from "../../repository/DocumentsRepository";
+import mongoose from "mongoose";
+import workertest from "./WorkerBullMQ";
+import { Categorys } from "../../categorys";
+import generateDocx from "../../lib/generateDocx";
+import { Packer } from "docx";
 
 
 interface IOptions {
@@ -18,6 +24,8 @@ export interface IJob {
     // fileID: string
     // _id: string
 }
+
+export const repo = new DocumentsRepository()
 
 async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
     try {
@@ -41,7 +49,7 @@ async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
                 attempts: 3,
                 backoff: {
                     type: "fixed",
-                    delay: 1000 * 60 * 3
+                    delay: 1000 * 60
                 },
             }
         })
@@ -65,28 +73,46 @@ async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
         const workerPath = process.cwd() + '/config/bullmq/WorkerBullMQ.ts'
         const worker = new Worker<IJob>(
             options.name,
-            workerPath,
+            workertest,
             {
                 connection: options.connection,
                 concurrency: options.concurrency,
                 limiter: {
                     max: 1,
-                    duration: 1000 * 60 * 1
+                    duration: 1000 * 30
                 },
             }
         );
 
-        worker.on('failed', (job, err) => {
-            if (!job) return
+        worker.on('failed', async (job, err) => {
+            try {
+                if (!job) return
 
-            if (job.attemptsMade >= job.opts.attempts!) {
-                console.log('Final failure, removing job:', job.id)
-                //dbye failed olarak işaretle 
+                if (job.attemptsMade >= job.opts.attempts! && mongoose.isValidObjectId(job.name)) {
+                    console.log('Final failure, removing job:', job.id)
+                    await repo.editDocumentErr(job.name, job.data.fileURL)
+
+                    const jobRecord = await repo.getByID(job.name)
+
+                    if (jobRecord.success.length + jobRecord.error.length == jobRecord.totalCount) {
+                        const successRecords = jobRecord.success.sort((a, b) => a.categoryName.localeCompare(b.categoryName)).map((doc, index) => {
+                            return Categorys[doc.categoryName].docx(doc.data, index + 1)
+                        })
+
+
+                        if (successRecords.length > 0) {
+                            const doc = generateDocx(successRecords)
+                            Packer.toBuffer(doc).then((buffer) => {
+                                Bun.write(`AI_RESULT-${(new Date()).toDateString()}.docx`, buffer);
+                            });
+                        }
+                    }
+
+                }
+            } catch (error) {
+                console.log("-------\n", err.message);
             }
         })
-
-        await queue.obliterate({ force: true })
-
 
         // await queue.upsertJobScheduler('test', {
         //     every: 1000 * 60 * 30,
@@ -96,13 +122,12 @@ async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
         // });
 
 
-
-        await queue.addBulk([
-            {
-                name: "job-1",
-                data: { fileURL: `https://cdn.thodex.live/test/Tez%20Savunma%20Sinavi%20Juri%20Onerisi%20Talebi%20hk.DR-16.pdf` },
-            }
-        ])
+        // await queue.addBulk([
+        //     {
+        //         name: "job-1",
+        //         data: { fileURL: `https://cdn.thodex.live/test/Tez%20Savunma%20Sinavi%20Juri%20Onerisi%20Talebi%20hk.DR-16.pdf` },
+        //     }
+        // ])
 
 
         fastify.addHook("onClose", async () => {

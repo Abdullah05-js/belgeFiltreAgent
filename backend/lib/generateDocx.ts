@@ -4,16 +4,14 @@ const file = await Bun.file("./karar_başlık.png").arrayBuffer()
 
 const table = new Table({
     width: {
-        size: 100 * 50,
-        type: WidthType.PERCENTAGE,
+        size: 0, type: WidthType.AUTO
     },
     rows: [
         // --- ROW 1: HEADERS ---
         new TableRow({
             children: [
                 new TableCell({
-                    borders: noBorders,
-                    width: { size: 50 * 50, type: WidthType.PERCENTAGE },
+                    width: { size: 0, type: WidthType.AUTO },
                     children: [
                         new Paragraph({
                             children: [
@@ -28,11 +26,9 @@ const table = new Table({
                     ],
                 }),
                 new TableCell({
-                    borders: noBorders,
-                    width: { size: 50 * 50, type: WidthType.PERCENTAGE },
+                    width: { size: 0, type: WidthType.AUTO },
                     children: [
                         new Paragraph({
-                            alignment: AlignmentType.RIGHT, // Right Align
                             children: [
                                 new TextRun({
                                     text: "TOPLANTI TARİHİ",
@@ -51,8 +47,7 @@ const table = new Table({
         new TableRow({
             children: [
                 new TableCell({
-                    borders: noBorders,
-                    width: { size: 50 * 50, type: WidthType.PERCENTAGE },
+                    width: { size: 0, type: WidthType.AUTO },
                     children: [
                         new Paragraph({
                             children: [
@@ -66,11 +61,9 @@ const table = new Table({
                     ],
                 }),
                 new TableCell({
-                    borders: noBorders,
-                    width: { size: 50 * 50, type: WidthType.PERCENTAGE },
+                    width: { size: 0, type: WidthType.AUTO },
                     children: [
                         new Paragraph({
-                            alignment: AlignmentType.RIGHT, // Right Align
                             children: [
                                 new TextRun({
                                     text: "27/12/2023",
@@ -87,7 +80,8 @@ const table = new Table({
 });
 
 
-export default function generateDocx(data: any[]): Document {
+export default function generateDocx(data: (Paragraph | Table)[][]): Document {
+
     return new Document({
         sections: [
             {
@@ -153,7 +147,7 @@ export default function generateDocx(data: any[]): Document {
 
                     table,
 
-                    ...data
+                    ...data.flat()
 
                 ],
             },

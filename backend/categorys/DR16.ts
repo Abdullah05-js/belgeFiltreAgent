@@ -1,6 +1,5 @@
 import z from 'zod';
-import { BorderStyle, ExternalHyperlink, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx';
-import { noBorders } from './shared';
+import { ExternalHyperlink, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx';
 
 export const DR16CategoryKey = "TEZ SAVUNMA JÜRI ÖNERI FORMU (DOKTORA)"
 
@@ -20,10 +19,11 @@ export const DR16Schema = z.object({
     exam: z.object({
         date: z.string().describe("Sınav tarihi."),
         clock: z.string().describe("Sınav saati."),
-        link: z.string().describe("Uzaktan erişim bağlantı adresi.")
+        link: z.string().describe("Uzaktan erişim bağlantı adresi."),
+        examPlace: z.string().describe("Sınav yeri.")
     }),
     members: z.array(z.object({
-        fullName: z.string().describe("Hocanın Ünvenı Adı Soyadı  örnek:Prof. Dr. Mehmet SARIBIYIK."),
+        fullName: z.string().describe("Hocanın Ünvenı Adı Soyadı  örnek:Prof. Dr. Mehmet SARIBIYIK. Not:soyadı hepsi büyük harfler yapılmalıdır."),
         university: z.string().describe("Hocanın Üniversitesi."),
         role: z.enum(["Tez izleme komitesi üyesi (danışman)", "Tez izleme komitesi üyesi", "Kurum içi", "Kurum dışı üye"]).describe("Üyenin görevi")
     })).describe(`kapsamı dışında bulunan üniversitelerin asil üyeleri.`),
@@ -60,10 +60,17 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
     })
 
     const targetFullMembersDocx = targetFullMembers.map((member) => {
+        let role: string = ""
+        if (member.role === "Kurum dışı üye" || member.role === "Kurum içi") {
+            role = ""
+        } else {
+            role = `(${member.role})`
+        }
+
         return new Paragraph({
             children: [
                 new TextRun({
-                    text: `${member.fullName} (${member.university}) (${member.role})`,
+                    text: `${member.fullName} (${member.university}) ${role}`,
                     bold: true,
                     size: 24
                 }),
@@ -72,10 +79,16 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
     })
 
     const targetSpareMembersDocx = targetSpareMembers.map((member) => {
+        let role: string = ""
+        if (member.role === "Kurum dışı üye" || member.role === "Kurum içi") {
+            role = ""
+        } else {
+            role = `(${member.role})`
+        }
         return new Paragraph({
             children: [
                 new TextRun({
-                    text: `${member.fullName} (${member.university}) (${member.role})`,
+                    text: `${member.fullName} (${member.university}) ${role}`,
                     bold: true,
                     size: 24
                 }),
@@ -109,11 +122,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                 new TableRow({
                     children: [
                         new TableCell({
-                            borders: {
-                                top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                            },
                             children: [
                                 new Paragraph({
                                     children: [
@@ -127,11 +135,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                             ],
                         }),
                         new TableCell({
-                            borders: {
-                                top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                            },
                             children: [
                                 new Paragraph({
                                     children: [
@@ -145,11 +148,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                             ],
                         }),
                         new TableCell({
-                            borders: {
-                                top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                            },
                             children: [
                                 new Paragraph({
                                     children: [
@@ -163,11 +161,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                             ],
                         }),
                         new TableCell({
-                            borders: {
-                                top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                            },
                             children: [
                                 new Paragraph({
                                     children: [
@@ -181,11 +174,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                             ],
                         }),
                         new TableCell({
-                            borders: {
-                                top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                                right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
-                            },
                             children: [
                                 new Paragraph({
                                     children: [
@@ -205,7 +193,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                 new TableRow({
                     children: [
                         new TableCell({
-                            borders: noBorders,
                             children: [
                                 new Paragraph({
                                     children: [
@@ -219,7 +206,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                             ],
                         }),
                         new TableCell({
-                            borders: noBorders,
                             children: [
                                 new Paragraph({
                                     children: [
@@ -233,7 +219,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                             ],
                         }),
                         new TableCell({
-                            borders: noBorders,
                             children: [
                                 new Paragraph({
                                     children: [
@@ -247,7 +232,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                             ],
                         }),
                         new TableCell({
-                            borders: noBorders,
                             children: [
                                 new Paragraph({
                                     children: [
@@ -261,7 +245,6 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                             ],
                         }),
                         new TableCell({
-                            borders: noBorders,
                             children: [
                                 new Paragraph({
                                     children: [
@@ -476,7 +459,7 @@ export const getDR16DocxOutput = (data: IDR16Schema, index: number) => {
                                         new ExternalHyperlink({
                                             children: [
                                                 new TextRun({
-                                                    text: "Toplantı linki",
+                                                    text: exam.examPlace,
                                                     style: "Hyperlink",
                                                 }),
                                             ],

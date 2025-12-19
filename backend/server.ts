@@ -4,7 +4,12 @@ import multipart from "@fastify/multipart";
 import cors from "@fastify/cors"
 import fastifyCookie from "@fastify/cookie";
 import pluginS3 from "./config/objectStorage";
-import QueueBullMQ from './config/bullmq/QueueBullMQ';
+import QueueBullMQ, { repo } from './config/bullmq/QueueBullMQ';
+import IndexRoute from './route';
+import pluginDB from './config/database';
+import { Categorys } from './categorys';
+import { Packer } from 'docx';
+import generateDocx from './lib/generateDocx';
 
 const fastify = Fastify({
     logger: true,
@@ -21,6 +26,9 @@ await fastify.register(cors, {
 fastify.register(fastifyCookie, {
     hook: "onRequest"
 })
+
+fastify.register(pluginDB, { url: process.env.MONGO_URL || "" });
+
 
 fastify.register(pluginS3, {
     accessKeyId: process.env.BUCKET_ACCESS_KEY || "",
@@ -42,13 +50,28 @@ fastify.register(QueueBullMQ, {
 })
 
 
-fastify.get("/getURL", async (req, res) => {
-    const data = fastify.R2.presign("122.docx", {
-        expiresIn: 3600,
-    })
-    res.send(data)
-})
+fastify.register(IndexRoute, { prefix: "/api/v1" })
 
+
+fastify.get("/test", async (req, res) => {
+    const jobRecord = await repo.getByID("6945910f191cbee7b0cc5356")
+
+    if (jobRecord.success.length + jobRecord.error.length == jobRecord.totalCount) {
+        const successRecords = jobRecord.success.sort((a, b) => a.categoryName.localeCompare(b.categoryName)).map((doc, index) => {
+            return Categorys[doc.categoryName].docx(doc.data, index + 1)
+        })
+
+
+        if (successRecords.length > 0) {
+            const doc = generateDocx(successRecords)
+            Packer.toBuffer(doc).then((buffer) => {
+                Bun.write(`AI_RESULT-${(new Date()).toDateString()}.docx`, buffer);
+            });
+        }
+    }
+
+    res.status(200).send("hi")
+})
 
 fastify.listen({ port: 5000, host: "0.0.0.0" }, (err, address) => {
     if (err) {
