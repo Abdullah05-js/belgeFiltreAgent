@@ -10,4 +10,5 @@ export default async function DocumentRoute(app: FastifyInstance) {
     const documentCtr = new DocumentController(documentSv)
 
     app.post("/createJob", documentCtr.createDocument.bind(documentCtr))
+    app.post("/upload", documentCtr.UploadDocuments.bind(documentCtr))
 }

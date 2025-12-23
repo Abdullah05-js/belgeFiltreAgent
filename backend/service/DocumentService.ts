@@ -1,8 +1,9 @@
-import type { FastifyInstance } from "fastify";
+import { type FastifyInstance } from "fastify";
 import { type IDocumentRepository } from "../repository/interface/IDocumentRepository";
 import type { IJob } from "../config/bullmq/QueueBullMQ";
 import type { IDocumentRecord } from "../models/Documents";
 import removeJobsByName from "../lib/removeJobsByName";
+import type { IUploadDocumentsResponse } from "../route/schema/documentSchema";
 
 
 export default class DocumentService {
@@ -69,5 +70,23 @@ export default class DocumentService {
     }
 
 
+
+    uploadDocuments(count: number): IUploadDocumentsResponse {
+        try {
+
+            const links = (new Array(count)).fill(0).map(() => {
+                const key = `files/${Bun.randomUUIDv7()}.pdf`
+                return this.fastify.R2.presign(key, {
+                    method: "PUT",
+                    expiresIn: 60 * 60,
+                    type: "application/pdf"
+                })
+            })
+
+            return { links }
+        } catch (error) {
+            throw new Error((error as Error).message)
+        }
+    }
 
 } 

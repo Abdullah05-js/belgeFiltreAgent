@@ -53,23 +53,12 @@ fastify.register(IndexRoute, { prefix: "/api/v1" })
 
 
 fastify.get("/test", async (req, res) => {
-    const jobRecord = await repo.getByID("6945910f191cbee7b0cc5356")
 
-    if (jobRecord.success.length + jobRecord.error.length == jobRecord.totalCount) {
-        const successRecords = jobRecord.success.sort((a, b) => a.categoryName.localeCompare(b.categoryName)).map((doc, index) => {
-            return Categorys[doc.categoryName].docx(doc.data, index + 1)
-        })
+    const link = fastify.R2.presign("Java_Lab_Egzersiz.pdf", {
+        expiresIn: 3600,
+    })
 
-
-        if (successRecords.length > 0) {
-            const doc = generateDocx(successRecords)
-            Packer.toBuffer(doc).then((buffer) => {
-                Bun.write(`AI_RESULT-${(new Date()).toDateString()}.docx`, buffer);
-            });
-        }
-    }
-
-    res.status(200).send("hi")
+    res.status(200).send(link)
 })
 
 fastify.listen({ port: 5000, host: "0.0.0.0" }, (err, address) => {

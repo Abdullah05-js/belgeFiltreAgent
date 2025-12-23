@@ -1,11 +1,26 @@
 import type { FastifyRequest } from 'fastify/types/request';
 import type { FastifyReply } from 'fastify/types/reply';
 import type { BaseErr, BaseResponse } from '../types/types';
-import type { getDocumentSchema } from '../route/schema/documentSchema';
+import type { getDocumentSchema, IUploadDocuments } from '../route/schema/documentSchema';
 import type DocumentService from '../service/DocumentService';
 
 export class DocumentController {
   constructor(private documentService: DocumentService) { }
+
+  async UploadDocuments(request: FastifyRequest<{ Body: IUploadDocuments }>, reply: FastifyReply) {
+    try {
+      const { count } = request.body
+      const links = this.documentService.uploadDocuments(count)
+      return reply.status(201).send(links)
+    } catch (error) {
+      const err = error as BaseErr
+      return reply.status(err.code ?? 500).send({
+        message: err.message ?? "unknown error",
+        data: "",
+        success: false
+      } as BaseResponse)
+    }
+  }
 
   async getDocuments(request: FastifyRequest<{ Body: getDocumentSchema }>, reply: FastifyReply) {
     try {
