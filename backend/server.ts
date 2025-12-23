@@ -1,5 +1,4 @@
 import Fastify from 'fastify';
-
 import multipart from "@fastify/multipart";
 import cors from "@fastify/cors"
 import fastifyCookie from "@fastify/cookie";

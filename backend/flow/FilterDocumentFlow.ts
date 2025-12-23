@@ -3,13 +3,12 @@ import type { BaseResponse } from "../types/types";
 import { generateObject } from 'ai';
 import z from 'zod';
 import { PDFDocument } from 'pdf-lib'
-import { createHuggingFace } from "@ai-sdk/huggingface";
 import { createMistral } from "@ai-sdk/mistral";
 
 // const model = google('gemini-2.5-flash')
 const temperature = 0
 const openai = createMistral({
-    apiKey: "yMdLb3wAD2fu959Ik4CHY2s92uKbxicg"
+    apiKey: "yMdLb3wAD2fu959Ik4CHY2s92uKbxicg",
 })
 const model = openai("mistral-large-latest")
 

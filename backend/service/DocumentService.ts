@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { type IDocumentRepository } from "../repository/interface/IDocumentRepository";
 import type { IJob } from "../config/bullmq/QueueBullMQ";
 import type { IDocumentRecord } from "../models/Documents";
+import removeJobsByName from "../lib/removeJobsByName";
 
 
 export default class DocumentService {
@@ -27,7 +28,6 @@ export default class DocumentService {
                 }
             });
 
-            // Add to queue
             await this.fastify.BullMQueue.addBulk(buildJobs);
 
         } catch (error) {
@@ -61,6 +61,8 @@ export default class DocumentService {
     async deleteDocument(id: string) {
         try {
             await this.documentRepo.deleteDocumentByID(id)
+            await removeJobsByName(this.fastify.BullMQueue, id)
+
         } catch (error) {
             throw new Error((error as Error).message)
         }
