@@ -1,3 +1,4 @@
+
 export interface File {
     id: string;
     name: string;
@@ -6,9 +7,26 @@ export interface File {
 }
 
 export interface IFileUpload {
-    keys: File[],
+    count: number
 }
 
 export interface IFileUploadResponse {
     links: string[],
+}
+
+export interface UploadProgress {
+    [key: string]: number;
+};
+
+export type JobStatus = "running" | "completed" | "failed" | "pending";
+
+export interface Job {
+    id: string;
+    name: string;
+    status: JobStatus;
+    createdAt: string;
+    processedFiles: number;
+    failedFiles: string[];
+    totalFiles: number;
+    outputFile?: string;
 }

@@ -1,7 +1,7 @@
 import type { FastifyRequest } from 'fastify/types/request';
 import type { FastifyReply } from 'fastify/types/reply';
 import type { BaseErr, BaseResponse } from '../types/types';
-import type { getDocumentSchema, IUploadDocuments } from '../route/schema/documentSchema';
+import type { IcreateJob, IUploadDocuments, Job } from '../route/schema/documentSchema';
 import type DocumentService from '../service/DocumentService';
 
 export class DocumentController {
@@ -22,16 +22,11 @@ export class DocumentController {
     }
   }
 
-  async getDocuments(request: FastifyRequest<{ Body: getDocumentSchema }>, reply: FastifyReply) {
+  async getDocuments(request: FastifyRequest, reply: FastifyReply) {
     try {
-
-      // const doc = combineDocuments(results)
-      // const buffer = await Packer.toBuffer(doc);
-      // reply
-      //   .header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-      //   .header('Content-Disposition', 'attachment; filename="document.docx"')
-      //   .send(buffer);
-
+      const files = await this.documentService.getDocuments()
+      console.log(files);
+      return reply.status(200).send(files)
     } catch (error) {
       const err = error as BaseErr
       reply.status(err.code ?? 500).send({
@@ -42,12 +37,27 @@ export class DocumentController {
     }
   }
 
-  async createDocument(request: FastifyRequest<{ Body: getDocumentSchema }>, reply: FastifyReply) {
+  async getJobs(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const { documentURLs } = request.body
-      console.log(documentURLs);
-      await this.documentService.createDocument(documentURLs)
-      return reply.status(202)
+      const files = await this.documentService.getJobs()
+      console.log(files);
+      return reply.status(200).send(files)
+    } catch (error) {
+      const err = error as BaseErr
+      reply.status(err.code ?? 500).send({
+        message: err.message ?? "unknown error",
+        data: "",
+        success: false
+      } as BaseResponse)
+    }
+  }
+
+  async CreateJob(request: FastifyRequest<{ Body: IcreateJob }>, reply: FastifyReply) {
+    try {
+      const { links, name } = request.body
+      console.log(links);
+      await this.documentService.CreateJobs(links, name)
+      return reply.status(201).send("")
     } catch (error) {
       const err = error as BaseErr
       return reply.status(err.code ?? 500).send({
@@ -57,4 +67,46 @@ export class DocumentController {
       } as BaseResponse)
     }
   }
+
+  async deleteJob(request: FastifyRequest<{
+    Querystring: {
+      jobID: string
+    }
+  }>, reply: FastifyReply) {
+    try {
+      const { jobID } = request.query
+
+      await this.documentService.deleteDocument(jobID)
+      return reply.status(200)
+    } catch (error) {
+      const err = error as BaseErr
+      return reply.status(err.code ?? 500).send({
+        message: err.message ?? "unknown error",
+        data: "",
+        success: false
+      } as BaseResponse)
+    }
+  }
+
+  async deleteFile(request: FastifyRequest<{
+    Querystring: {
+      fileID: string
+    }
+  }>, reply: FastifyReply) {
+    try {
+      const { fileID } = request.query
+      console.log("-----\n", fileID);
+      await this.documentService.deleteFile(fileID)
+      return reply.status(200)
+    } catch (error) {
+      const err = error as BaseErr
+      return reply.status(err.code ?? 500).send({
+        message: err.message ?? "unknown error",
+        data: "",
+        success: false
+      } as BaseResponse)
+    }
+  }
+
+
 }

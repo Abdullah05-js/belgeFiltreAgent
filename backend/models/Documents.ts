@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import type { IWithTimestamps } from '../types/types';
 import type { CategoryName } from '../categorys';
+import type { JobStatus } from '../route/schema/documentSchema';
 
 
 
@@ -11,6 +12,8 @@ export interface SuccessDocument {
 
 export interface IDocumentRecord extends IWithTimestamps {
     _id: mongoose.Types.ObjectId;
+    name: string
+    status: JobStatus
     totalCount: number
     success: {
         categoryName: CategoryName;
@@ -22,6 +25,14 @@ export interface IDocumentRecord extends IWithTimestamps {
 
 export const DocumentsSchema = new Schema<IDocumentRecord>(
     {
+        status: {
+            type: String,
+            required: true,
+        },
+        name: {
+            type: String,
+            required: true,
+        },
         outputKey: {
             type: String,
             required: false,

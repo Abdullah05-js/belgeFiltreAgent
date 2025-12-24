@@ -3,7 +3,7 @@ import { type IDocumentRepository } from "../repository/interface/IDocumentRepos
 import type { IJob } from "../config/bullmq/QueueBullMQ";
 import type { IDocumentRecord } from "../models/Documents";
 import removeJobsByName from "../lib/removeJobsByName";
-import type { IUploadDocumentsResponse } from "../route/schema/documentSchema";
+import type { File, IUploadDocumentsResponse, Job } from "../route/schema/documentSchema";
 
 
 export default class DocumentService {
@@ -12,15 +12,21 @@ export default class DocumentService {
     constructor(private readonly documentRepo: IDocumentRepository, private readonly fastify: FastifyInstance,
     ) { }
 
-    async createDocument(documents: string[]): Promise<void> {
+
+
+    async CreateJobs(documents: string[], name: string): Promise<void> {
         let id: string | undefined;
         try {
-            const doc = await this.documentRepo.create(documents.length);
+            const links = documents.map((a) => this.fastify.R2.presign(a, {
+                expiresIn: 3600 * 4,
+            }))
+
+            const doc = await this.documentRepo.create(documents.length, name);
             id = doc._id.toString()
             const buildJobs: {
                 name: string;
                 data: IJob;
-            }[] = documents.map((a) => {
+            }[] = links.map((a) => {
                 return {
                     name: doc._id.toString(),
                     data: {
@@ -30,6 +36,7 @@ export default class DocumentService {
             });
 
             await this.fastify.BullMQueue.addBulk(buildJobs);
+            await this.documentRepo.editDocumentStatus(id, "running")
 
         } catch (error) {
             if (id) {
@@ -59,11 +66,20 @@ export default class DocumentService {
         }
     }
 
+
     async deleteDocument(id: string) {
         try {
             await this.documentRepo.deleteDocumentByID(id)
             await removeJobsByName(this.fastify.BullMQueue, id)
 
+        } catch (error) {
+            throw new Error((error as Error).message)
+        }
+    }
+
+    async deleteFile(id: string) {
+        try {
+            await this.fastify.R2.delete(id)
         } catch (error) {
             throw new Error((error as Error).message)
         }
@@ -84,6 +100,54 @@ export default class DocumentService {
             })
 
             return { links }
+        } catch (error) {
+            throw new Error((error as Error).message)
+        }
+    }
+
+    async getDocuments(): Promise<File[]> {
+        try {
+
+            const files = await this.fastify.R2.list({
+                prefix: 'files/',
+                maxKeys: 500,
+            })
+
+            return files.contents?.map((file) => {
+                return {
+                    id: file.key,
+                    name: file.key,
+                    size: file.size,
+                    uploadedAt: file.lastModified,
+                } as File
+            }) ?? []
+
+        } catch (error) {
+            throw new Error((error as Error).message)
+        }
+    }
+
+    async getJobs(): Promise<Job[]> {
+        try {
+
+            const jobs = await this.documentRepo.getJobs()
+
+            return jobs?.map((job) => {
+
+                return {
+                    id: job._id.toString(),
+                    name: job.name,
+                    status: job.status,
+                    createdAt: job.createdAt?.toDateString(),
+                    processedFiles: job.success.length,
+                    failedFiles: job.error,
+                    totalFiles: job.totalCount,
+                    outputFile: job.outputKey === "" ? job.outputKey : this.fastify.R2.presign(job.outputKey, {
+                        expiresIn: 3600 * 6,
+                    }),
+                } as Job
+            }) ?? []
+
         } catch (error) {
             throw new Error((error as Error).message)
         }

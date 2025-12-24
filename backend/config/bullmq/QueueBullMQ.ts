@@ -93,18 +93,19 @@ async function QueueBullMQ(fastify: FastifyInstance, options: IOptions) {
                     await repo.editDocumentErr(job.name, job.data.fileURL)
 
                     const jobRecord = await repo.getByID(job.name)
-
+                    await repo.editDocumentStatus(jobRecord._id.toString(), "failed")
                     if (jobRecord.success.length + jobRecord.error.length == jobRecord.totalCount) {
                         const successRecords = jobRecord.success.sort((a, b) => a.categoryName.localeCompare(b.categoryName)).map((doc, index) => {
                             return Categorys[doc.categoryName].docx(doc.data, index + 1)
                         })
-
+                        await repo.editDocumentStatus(jobRecord._id.toString(), "completed")
 
                         if (successRecords.length > 0) {
                             const doc = generateDocx(successRecords)
-                            Packer.toBuffer(doc).then((buffer) => {
-                                Bun.write(`AI_RESULT-${(new Date()).toDateString()}.docx`, buffer);
-                            });
+                            const buffer = (await Packer.toBuffer(doc)).buffer
+                            const key = `output/${Bun.randomUUIDv7()}.docx`
+                            await fastify.R2.write(key, buffer)
+                            await repo.editDocuementOutput(jobRecord._id.toString(), key)
                         }
                     }
 

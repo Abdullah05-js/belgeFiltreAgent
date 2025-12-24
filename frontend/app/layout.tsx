@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Figtree } from "next/font/google";
 import "./globals.css";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import QueryWarrper from "@/components/QueryWarrper";
+import { Toaster } from "@/components/ui/sonner";
 
 const figtree = Figtree({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -21,7 +21,6 @@ export const metadata: Metadata = {
   description: "Belge işleme ve filtreleme uygulaması",
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,10 +31,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <QueryWarrper>{children}</QueryWarrper>
+        <QueryWarrper>
+          {children}
+          <Toaster duration={750} />
+        </QueryWarrper>
       </body>
     </html>
   );
 }
-
-

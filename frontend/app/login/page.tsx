@@ -1,31 +1,22 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import Link from "next/link";
-import Image from "next/image";
-import logo from "@/public/kou.png";
+import * as React from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
+
 export default function LoginPage() {
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
+  const [email, setEmail] = React.useState("")
+  const [password, setPassword] = React.useState("")
 
   const handleLogin = () => {
     // TODO: Implement login logic
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center flex-col bg-muted/50 p-4 gap-4">
-      <Image src={logo} width={128} height={128} alt="kou" />
-
+    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Login</CardTitle>
@@ -58,15 +49,13 @@ export default function LoginPage() {
             Login
           </Button>
           <div className="text-center text-sm">
-            <Link
-              href="/change-password"
-              className="text-primary hover:underline"
-            >
+            <Link href="/change-password" className="text-primary hover:underline">
               Change Password
             </Link>
           </div>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
+

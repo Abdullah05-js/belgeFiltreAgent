@@ -6,6 +6,7 @@ import { repo } from "../bullmq/QueueBullMQ"
 import { Categorys } from "../../categorys";
 import generateDocx from "../../lib/generateDocx";
 import { Packer } from "docx";
+import { fastify } from "../../server";
 
 
 export default async function workertest(job: Job<IJob>) {
@@ -36,13 +37,14 @@ export default async function workertest(job: Job<IJob>) {
             const successRecords = jobRecord.success.sort((a, b) => a.categoryName.localeCompare(b.categoryName)).map((doc, index) => {
                 return Categorys[doc.categoryName].docx(doc.data, index + 1)
             })
-
+            await repo.editDocumentStatus(jobRecord._id.toString(), "completed")
 
             if (successRecords.length > 0) {
                 const doc = generateDocx(successRecords)
-                Packer.toBuffer(doc).then((buffer) => {
-                    Bun.write(`AI_RESULT-${(new Date()).toDateString()}.docx`, buffer);
-                });
+                const buffer = (await Packer.toBuffer(doc)).buffer
+                const key = `output/${Bun.randomUUIDv7()}.docx`
+                await fastify.R2.write(key, buffer)
+                await repo.editDocuementOutput(jobRecord._id.toString(), key)
             }
         }
 

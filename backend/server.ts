@@ -10,7 +10,7 @@ import { Categorys } from './categorys';
 import { Packer } from 'docx';
 import generateDocx from './lib/generateDocx';
 
-const fastify = Fastify({
+export const fastify = Fastify({
     logger: true,
     trustProxy: true,
 });

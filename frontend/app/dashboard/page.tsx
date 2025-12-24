@@ -42,24 +42,89 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SelectFilesButton from "@/components/SelectFilesButton";
-import { File } from "@/types";
-// Types
-type JobStatus = "running" | "completed" | "failed" | "pending";
+import { File, Job, JobStatus } from "@/types";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
-interface Job {
-  id: string;
-  name: string;
-  status: JobStatus;
-  createdAt: string;
-  processedFiles: number;
-  failedFiles: number;
-  totalFiles: number;
-  outputFile?: string;
-}
+const mockJobs: Job[] = [
+  {
+    id: "job-1",
+    name: "Thesis PDFs – Batch 1",
+    status: "completed",
+    createdAt: "2025-12-20T10:15:00Z",
+    processedFiles: 8,
+    failedFiles: [],
+    totalFiles: 8,
+    outputFile: "results-batch-1.zip",
+  },
+  {
+    id: "job-2",
+    name: "Invoice Extraction",
+    status: "running",
+    createdAt: "2025-12-22T14:30:00Z",
+    processedFiles: 3,
+    failedFiles: [],
+    totalFiles: 10,
+  },
+  {
+    id: "job-3",
+    name: "Student Reports",
+    status: "failed",
+    createdAt: "2025-12-21T09:00:00Z",
+    processedFiles: 2,
+    failedFiles: [],
+    totalFiles: 7,
+  },
+  {
+    id: "job-4",
+    name: "Legal Documents",
+    status: "pending",
+    createdAt: "2025-12-23T08:45:00Z",
+    processedFiles: 0,
+    failedFiles: [],
+    totalFiles: 4,
+  },
+];
+
+const mockFiles: File[] = [
+  {
+    id: "file-1",
+    name: "thesis_ahmet_yilmaz.pdf",
+    size: 524288,
+    uploadedAt: "2025-12-22T12:00:00Z",
+  },
+  {
+    id: "file-2",
+    name: "invoice_december.pdf",
+    size: 212992,
+    uploadedAt: "2025-12-22T12:05:00Z",
+  },
+  {
+    id: "file-3",
+    name: "student_report_2024.pdf",
+    size: 734003,
+    uploadedAt: "2025-12-21T16:40:00Z",
+  },
+  {
+    id: "file-4",
+    name: "legal_contract.pdf",
+    size: 1048576,
+    uploadedAt: "2025-12-20T09:30:00Z",
+  },
+  {
+    id: "file-5",
+    name: "jury_report.pdf",
+    size: 348160,
+    uploadedAt: "2025-12-23T07:10:00Z",
+  },
+];
 
 export default function DashboardPage() {
-  const [jobs, setJobs] = React.useState<Job[]>([]);
-  const [files, setFiles] = React.useState<File[]>([]);
   const [selectedFiles, setSelectedFiles] = React.useState<string[]>([]);
   const [selectedJob, setSelectedJob] = React.useState<Job | null>(null);
   const [isJobDialogOpen, setIsJobDialogOpen] = React.useState(false);
@@ -67,20 +132,114 @@ export default function DashboardPage() {
     React.useState(false);
   const [newJobName, setNewJobName] = React.useState("");
 
-  // TODO: Implement fetch jobs from backend
-  const fetchJobs = () => {
-    // TODO: Fetch jobs from backend
-  };
+  const {
+    data: files = [],
+    isFetching,
+    refetch: refetchFile,
+  } = useQuery<File[]>({
+    queryKey: ["files"],
+    queryFn: async (): Promise<File[]> => {
+      try {
+        const data = await axios.get<File[]>(
+          `${process.env.NEXT_PUBLIC_API_URL}/document/getDocuments`
+        );
+        return data.data;
+      } catch (error) {
+        throw new Error((error as Error).message) || "error";
+      }
+    },
+    refetchOnWindowFocus: true,
+  });
 
-  // TODO: Implement fetch files from backend
-  const fetchFiles = () => {
-    // TODO: Fetch files from backend
-  };
+  const {
+    data: jobs = [],
+    isFetching: isFetchingJobs,
+    refetch: refetchJobs,
+  } = useQuery<Job[]>({
+    queryKey: ["jobs"],
+    queryFn: async (): Promise<Job[]> => {
+      try {
+        const data = await axios.get<Job[]>(
+          `${process.env.NEXT_PUBLIC_API_URL}/document/getJobs`
+        );
+        return data.data;
+      } catch (error) {
+        throw new Error((error as Error).message) || "error";
+      }
+    },
+    refetchOnWindowFocus: true,
+  });
 
-  React.useEffect(() => {
-    fetchJobs();
-    fetchFiles();
-  }, []);
+  const { mutate: handleCreateJob } = useMutation({
+    mutationFn: async () => {
+      try {
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/document/createJob`,
+          {
+            links: selectedFiles,
+            name: newJobName,
+          }
+        );
+      } catch (error) {
+        throw new Error((error as Error).message) || "error";
+      }
+    },
+    onError(error, variables, onMutateResult, context) {
+      toast.error("Hata: " + error.message);
+    },
+    onSuccess(data, variables, onMutateResult, context) {
+      setIsCreateJobDialogOpen(false);
+      setSelectedFiles([]);
+      setNewJobName("");
+      toast.success("Görev Eklendi.");
+    },
+  });
+
+  const { mutate: handleDeleteJob } = useMutation({
+    mutationFn: async (jobId: string) => {
+      try {
+        if (!jobId.trim()) throw new Error("Yanlış ID");
+
+        await axios.delete(
+          `${process.env.NEXT_PUBLIC_API_URL}/document/deleteJob?jobID=${jobId}`
+        );
+      } catch (error) {
+        throw new Error((error as Error).message) || "error";
+      }
+    },
+    onError(error, variables, onMutateResult, context) {
+      toast.error("Hata: " + error.message);
+    },
+    onSuccess(data, variables, onMutateResult, context) {
+      setIsCreateJobDialogOpen(false);
+      setSelectedFiles([]);
+      setNewJobName("");
+      toast.success("Görev Silindi.");
+    },
+  });
+
+  const { mutate: handleDeleteFile } = useMutation({
+    mutationFn: async (fileId: string) => {
+      try {
+        if (!fileId.trim()) throw new Error("Yanlış ID");
+
+        await axios.delete(
+          `${process.env.NEXT_PUBLIC_API_URL}/document/deleteFile?fileID=${fileId}`
+        );
+      } catch (error) {
+        throw new Error((error as Error).message) || "error";
+      }
+    },
+    onError(error, variables, onMutateResult, context) {
+      toast.error("Hata: " + error.message);
+    },
+    onSuccess(data, variables, onMutateResult, context) {
+      setIsCreateJobDialogOpen(false);
+      setSelectedFiles([]);
+      setNewJobName("");
+      toast.success("Dosya Silindi.");
+    },
+  });
 
   const handleFileSelect = (fileId: string) => {
     setSelectedFiles((prev) =>
@@ -97,22 +256,6 @@ export default function DashboardPage() {
       setSelectedFiles(files.map((f) => f.id));
     }
   };
-
-  const handleCreateJob = () => {
-    // TODO: Implement create job logic
-    setIsCreateJobDialogOpen(false);
-    setSelectedFiles([]);
-    setNewJobName("");
-  };
-
-  const handleDeleteJob = (jobId: string) => {
-    // TODO: Implement delete job logic
-  };
-
-  const handleDeleteFile = (fileId: string) => {
-    // TODO: Implement delete file logic
-  };
-
 
   const handleJobClick = (job: Job) => {
     setSelectedJob(job);
@@ -132,16 +275,17 @@ export default function DashboardPage() {
 
   const getJobProgress = (job: Job) => {
     if (job.totalFiles === 0) return 0;
-    return ((job.processedFiles + job.failedFiles) / job.totalFiles) * 100;
+    return (
+      ((job.processedFiles + job.failedFiles.length) / job.totalFiles) * 100
+    );
   };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-bold">Kontrol Paneli</h1>
         <div className="flex gap-2">
           <div>
-            
             <SelectFilesButton />
           </div>
         </div>
@@ -149,37 +293,70 @@ export default function DashboardPage() {
 
       <Tabs defaultValue="jobs" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="jobs">Jobs</TabsTrigger>
-          <TabsTrigger value="files">Files</TabsTrigger>
+          <TabsTrigger value="jobs">Karar</TabsTrigger>
+          <TabsTrigger value="files">Dosyalar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="jobs" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Past Jobs</CardTitle>
+              <CardTitle>Önceki Kararlar</CardTitle>
               <CardDescription>
-                View and manage your processing jobs
+                Karar görevlerinizi görüntüleyin ve yönetin.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Isim</TableHead>
+                    <TableHead>Durum</TableHead>
+                    <TableHead>Oluşturulma Tarihi</TableHead>
+                    <TableHead>İlerleyiş</TableHead>
+                    <TableHead>Eylemler</TableHead>
+                    <TableHead>
+                      <Button onClick={() => refetchJobs()}>Yenile</Button>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {jobs.length === 0 ? (
+                  {isFetching ? (
+                    <TableRow>
+                      {/* Job name */}
+                      <TableCell>
+                        <Skeleton className="h-4 w-40" />
+                      </TableCell>
+
+                      {/* Status badge */}
+                      <TableCell>
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                      </TableCell>
+
+                      {/* Created date */}
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+
+                      {/* Progress */}
+                      <TableCell>
+                        <div className="space-y-2">
+                          <Skeleton className="h-2 w-full rounded" />
+                          <Skeleton className="h-3 w-32" />
+                        </div>
+                      </TableCell>
+
+                      {/* Delete button */}
+                      <TableCell>
+                        <Skeleton className="h-8 w-20 rounded-md" />
+                      </TableCell>
+                    </TableRow>
+                  ) : jobs.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}
                         className="text-center text-muted-foreground"
                       >
-                        No jobs found
+                        İş ilanı bulunamadı.{" "}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -199,8 +376,8 @@ export default function DashboardPage() {
                           <div className="space-y-1">
                             <Progress value={getJobProgress(job)} />
                             <p className="text-xs text-muted-foreground">
-                              {job.processedFiles + job.failedFiles} /{" "}
-                              {job.totalFiles} files
+                              {job.processedFiles + job.failedFiles.length} /{" "}
+                              {job.totalFiles} Dosyalar
                             </p>
                           </div>
                         </TableCell>
@@ -208,17 +385,15 @@ export default function DashboardPage() {
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="sm">
-                                Delete
+                                Sil
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Are you sure?
-                                </AlertDialogTitle>
+                                <AlertDialogTitle>Emin misin?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This action cannot be undone. This will
-                                  permanently delete the job "{job.name}".
+                                  Bu işlem geri alınamaz. Bu, işi kalıcı olarak
+                                  silecektir."{job.name}".
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -226,7 +401,7 @@ export default function DashboardPage() {
                                 <AlertDialogAction
                                   onClick={() => handleDeleteJob(job.id)}
                                 >
-                                  Delete
+                                  Sil
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -248,13 +423,13 @@ export default function DashboardPage() {
                 <div>
                   <CardTitle>Files</CardTitle>
                   <CardDescription>
-                    Manage your uploaded files and create new jobs
+                    Yüklediğiniz dosyaları yönetin ve yeni işler oluşturun.{" "}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
                   {selectedFiles.length > 0 && (
                     <Button onClick={() => setIsCreateJobDialogOpen(true)}>
-                      Create Job ({selectedFiles.length})
+                      İş Oluştur ({selectedFiles.length})
                     </Button>
                   )}
                 </div>
@@ -273,20 +448,51 @@ export default function DashboardPage() {
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Uploaded At</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Isim</TableHead>
+                    <TableHead>Boyut</TableHead>
+                    <TableHead>Yüklenme Tarihi</TableHead>
+                    <TableHead>Eylemler</TableHead>
+                    <TableHead>
+                      <Button onClick={() => refetchFile()}>Yenile</Button>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {files.length === 0 ? (
+                  {isFetchingJobs ? (
+                    <TableRow>
+                      {/* Checkbox */}
+                      <TableCell>
+                        <Skeleton className="h-4 w-4 rounded-sm" />
+                      </TableCell>
+
+                      {/* File name */}
+                      <TableCell>
+                        <Skeleton className="h-4 w-48" />
+                      </TableCell>
+
+                      {/* File size */}
+                      <TableCell>
+                        <Skeleton className="h-4 w-20" />
+                      </TableCell>
+
+                      {/* Upload date */}
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+
+                      {/* Delete button */}
+                      <TableCell>
+                        <Skeleton className="h-8 w-20 rounded-md" />
+                      </TableCell>
+                    </TableRow>
+                  ) : files.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}
                         className="text-center text-muted-foreground"
                       >
-                        No files found. Upload PDF files to get started.
+                        Dosya bulunamadı. Başlamak için PDF dosyalarınızı
+                        yükleyin.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -311,21 +517,19 @@ export default function DashboardPage() {
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="sm">
-                                Delete
+                                Sil
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Are you sure?
-                                </AlertDialogTitle>
+                                <AlertDialogTitle>Emin misin?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This action cannot be undone. This will
-                                  permanently delete the file "{file.name}".
+                                  Bu işlem geri alınamaz. Bu, dosyayı kalıcı
+                                  olarak silecektir."{file.name}".
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>Iptal</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDeleteFile(file.id)}
                                 >
@@ -350,19 +554,17 @@ export default function DashboardPage() {
         <DialogContent size="xl">
           <DialogHeader>
             <DialogTitle>{selectedJob?.name}</DialogTitle>
-            <DialogDescription>
-              Job details and processing status
-            </DialogDescription>
+            <DialogDescription>İş detayları ve işlem durumu</DialogDescription>
           </DialogHeader>
           {selectedJob && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Status:</span>
+                  <span className="text-sm font-medium">Durum:</span>
                   {getStatusBadge(selectedJob.status)}
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Progress:</span>
+                  <span className="text-sm font-medium">İlerleyiş:</span>
                   <span className="text-sm text-muted-foreground">
                     {getJobProgress(selectedJob).toFixed(0)}%
                   </span>
@@ -374,7 +576,7 @@ export default function DashboardPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-sm">
-                      Successfully Processed
+                      İşlem başarıyla tamamlandı.
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -385,23 +587,62 @@ export default function DashboardPage() {
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Failed Files</CardTitle>
+                    <CardTitle className="text-sm">
+                      Başarısız Dosyalar
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-2xl font-bold text-red-600">
-                      {selectedJob.failedFiles}
-                    </p>
+                    <ScrollArea className="h-64 rounded-md border">
+                      <div className="p-4 space-y-3">
+                        <h4 className="text-sm font-medium text-muted-foreground">
+                          Başarısız Dosyalar
+                        </h4>
+
+                        {selectedJob.failedFiles.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            Başarısız dosya yok 🎉
+                          </p>
+                        ) : (
+                          selectedJob.failedFiles.map((url, index) => (
+                            <div
+                              key={url}
+                              className="flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-2"
+                            >
+                              <span className="text-xs text-muted-foreground">
+                                #{index + 1}
+                              </span>
+
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="truncate text-sm font-medium text-blue-600 hover:underline"
+                              >
+                                Dosyayı Aç
+                              </a>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
                   </CardContent>
                 </Card>
               </div>
 
               {selectedJob.outputFile && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Output File:</Label>
+                  <Label className="text-sm font-medium">Karar Dosyası:</Label>
                   <div className="flex items-center gap-2">
                     <Input value={selectedJob.outputFile} readOnly />
-                    <Button variant="outline" size="sm">
-                      Download
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={selectedJob.outputFile}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Indir
+                      </a>
                     </Button>
                   </div>
                 </div>
@@ -418,14 +659,14 @@ export default function DashboardPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Job</DialogTitle>
+            <DialogTitle>Yeni Karar Metni</DialogTitle>
             <DialogDescription>
-              Create a new processing job from selected files
+              Seçilen dosyalardan yeni bir işleme görevi oluşturun
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="job-name">Job Name</Label>
+              <Label htmlFor="job-name">Karar ismi</Label>
               <Input
                 id="job-name"
                 placeholder="Enter job name"
@@ -434,7 +675,7 @@ export default function DashboardPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Selected Files ({selectedFiles.length})</Label>
+              <Label>Seçilen Dosya ({selectedFiles.length})</Label>
               <div className="max-h-40 overflow-y-auto border rounded-md p-2">
                 {files
                   .filter((f) => selectedFiles.includes(f.id))
@@ -445,17 +686,24 @@ export default function DashboardPage() {
                   ))}
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsCreateJobDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleCreateJob} disabled={!newJobName.trim()}>
-                Create Job
-              </Button>
-            </div>
+            {isFetching ? (
+              <Spinner />
+            ) : (
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateJobDialogOpen(false)}
+                >
+                  Iptal
+                </Button>
+                <Button
+                  onClick={() => handleCreateJob()}
+                  disabled={!newJobName.trim() || selectedFiles.length <= 0}
+                >
+                  Yeni Karar
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

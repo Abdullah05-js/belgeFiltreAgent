@@ -2,15 +2,18 @@ import type { IDocumentRecord, SuccessDocument } from "../models/Documents";
 import { type IDocumentRepository } from "./interface/IDocumentRepository"
 import { DocumentsModel } from "../models/Documents";
 import mongoose from "mongoose";
+import type { JobStatus } from "../route/schema/documentSchema";
 export default class DocumentsRepository implements IDocumentRepository {
 
-    async create(totalCount: number): Promise<IDocumentRecord> {
+    async create(totalCount: number, name: string): Promise<IDocumentRecord> {
         try {
 
             if (totalCount <= 0) throw new Error("totalCount must be greater than 0");
 
             const newDocumentsJob = new DocumentsModel({
                 totalCount,
+                name,
+                status: "pending",
             })
 
             return await newDocumentsJob.save()
@@ -30,10 +33,10 @@ export default class DocumentsRepository implements IDocumentRepository {
 
     async getByID(id: string): Promise<IDocumentRecord> {
         try {
-            
+
             const doc = await DocumentsModel.findById(id)
             if (!doc) throw new Error("ararken hatta oldu")
-                        console.log("----\n 4355 ");
+            console.log("----\n 4355 ");
 
             return doc
         } catch (error) {
@@ -67,6 +70,32 @@ export default class DocumentsRepository implements IDocumentRepository {
             throw new Error((error as Error).message)
         }
     }
+
+    async editDocumentStatus(id: string, status: JobStatus): Promise<IDocumentRecord> {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(id)) {
+                throw new Error("Invalid document id");
+            }
+            const data = await DocumentsModel.findByIdAndUpdate(
+                id,
+                {
+                    status,
+                },
+                {
+                    new: true,
+                }
+            );
+
+            if (!data) {
+                throw new Error("Cannot find document with given id");
+            }
+
+            return data;
+        } catch (error) {
+            throw new Error((error as Error).message)
+        }
+    }
+
     async editDocumentSuccess(id: string, doc: SuccessDocument): Promise<IDocumentRecord> {
         try {
             if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -130,6 +159,15 @@ export default class DocumentsRepository implements IDocumentRepository {
             if (!isDeleted) {
                 throw new Error("Document not found");
             }
+        } catch (error) {
+            throw new Error((error as Error).message)
+        }
+    }
+
+    async getJobs(): Promise<IDocumentRecord[]> {
+        try {
+            const data = await DocumentsModel.find({})
+            return data
         } catch (error) {
             throw new Error((error as Error).message)
         }

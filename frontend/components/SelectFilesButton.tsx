@@ -12,24 +12,30 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "./ui/separator";
 import React, { useRef } from "react";
-import { IFileUpload, IFileUploadResponse } from "@/types";
+import { IFileUpload, IFileUploadResponse, UploadProgress } from "@/types";
 import { ScrollArea } from "./ui/scroll-area";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
+import { Progress } from "./ui/progress";
+import { Spinner } from "./ui/spinner";
+import { toast } from "sonner";
 
 const SelectFilesButton = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = React.useState<File[]>([]);
+  const [progress, setProgress] = React.useState<UploadProgress>({});
 
   const mutete = useMutation({
     mutationFn: async (data: IFileUpload) => {
       try {
         const resp = await axios.post<IFileUploadResponse>(
-          `${process.env.NEXT_PUBLIC_API_URL}/files/upload`,
+          `${process.env.NEXT_PUBLIC_API_URL}/document/upload`,
           data
         );
 
-        if (resp.data.links.length !== data.keys.length)
+        console.log(resp);
+
+        if (resp.data.links.length !== data.count)
           throw new Error("hatta oluştu tekrar deneyin.");
 
         const uploadPromises = resp.data.links.map((link, index) => {
@@ -39,6 +45,16 @@ const SelectFilesButton = () => {
             headers: {
               "Content-Type": file.type,
             },
+            onUploadProgress: (event) => {
+              if (!event.total) return;
+
+              const percent = Math.round((event.loaded * 100) / event.total);
+
+              setProgress((prev) => ({
+                ...prev,
+                [file.name]: percent,
+              }));
+            },
           });
         });
 
@@ -47,8 +63,14 @@ const SelectFilesButton = () => {
         throw new Error((error as Error).message) || "error";
       }
     },
-    onError(error, variables, onMutateResult, context) {},
-    onSuccess(data, variables, onMutateResult, context) {},
+    onError(error, variables, onMutateResult, context) {
+      toast.error("Hata: " + error.message);
+    },
+    onSuccess(data, variables, onMutateResult, context) {
+      toast.success("Başarılı şekilde dosyalar kaydedildi");
+      setFiles([]);
+      setProgress({});
+    },
   });
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,15 +97,23 @@ const SelectFilesButton = () => {
         onChange={handleFileUpload}
       />
       <SheetTrigger asChild>
-        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-          Upload PDF
+        <Button
+          variant="outline"
+          disabled={mutete.isPending}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {mutete.isPending ? <Spinner /> : "Upload PDF"}
         </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Dosyaları Seçiniz</SheetTitle>
         </SheetHeader>
-        <Button variant="default" onClick={() => fileInputRef.current?.click()}>
+        <Button
+          disabled={mutete.isPending}
+          variant="default"
+          onClick={() => fileInputRef.current?.click()}
+        >
           Dosya Ekle
         </Button>
         <ScrollArea className="w-full h-2/3 rounded-md border">
@@ -101,14 +131,26 @@ const SelectFilesButton = () => {
                   {index + 1} ) {file.name} ({Math.round(file.size / 1024)} KB)
                 </div>
                 <Separator className="my-2" />
+                <Progress value={progress[index] ?? 0} />
               </div>
             ))}
           </div>
         </ScrollArea>
         <SheetFooter>
-          <Button type="submit">Save changes</Button>
+          <Button
+            disabled={mutete.isPending}
+            onClick={() =>
+              mutete.mutate({
+                count: files.length,
+              })
+            }
+          >
+            {mutete.isPending ? <Spinner /> : "Değişiklikleri kaydet"}
+          </Button>
           <SheetClose asChild>
-            <Button variant="outline">Close</Button>
+            <Button disabled={mutete.isPending} variant="outline">
+              Iptal
+            </Button>
           </SheetClose>
         </SheetFooter>
       </SheetContent>

@@ -1,32 +1,23 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import Link from "next/link";
-import Image from "next/image";
-import logo from "@/public/kou.png";
+import * as React from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
 
 export default function ChangePasswordPage() {
-  const [currentPassword, setCurrentPassword] = React.useState("");
-  const [newPassword, setNewPassword] = React.useState("");
-  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [currentPassword, setCurrentPassword] = React.useState("")
+  const [newPassword, setNewPassword] = React.useState("")
+  const [confirmPassword, setConfirmPassword] = React.useState("")
 
   const handleChangePassword = () => {
     // TODO: Implement change password logic
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center flex-col gap-4 bg-muted/50 p-4">
-      <Image src={logo} width={128} height={128} alt="kou" />
+    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Change Password</CardTitle>
@@ -76,5 +67,6 @@ export default function ChangePasswordPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
+

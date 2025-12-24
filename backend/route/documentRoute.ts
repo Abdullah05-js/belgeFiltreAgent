@@ -9,6 +9,11 @@ export default async function DocumentRoute(app: FastifyInstance) {
     const documentSv = new DocumentService(docRepository, app)
     const documentCtr = new DocumentController(documentSv)
 
-    app.post("/createJob", documentCtr.createDocument.bind(documentCtr))
+    app.post("/createJob", documentCtr.CreateJob.bind(documentCtr))
     app.post("/upload", documentCtr.UploadDocuments.bind(documentCtr))
+    app.get("/getDocuments", documentCtr.getDocuments.bind(documentCtr))
+    app.get("/getJobs", documentCtr.getJobs.bind(documentCtr))
+    app.delete("/deleteJob", documentCtr.deleteJob.bind(documentCtr))
+    app.delete("/deleteFile", documentCtr.deleteJob.bind(documentCtr))
+
 }
