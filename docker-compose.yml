@@ -1,0 +1,9 @@
+services:
+  backend:
+    build: "./backend"
+
+  frontend:
+    build: "./frontend"
+
+  redis:
+    image: redis:7

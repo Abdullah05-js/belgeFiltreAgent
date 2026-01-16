@@ -1,14 +1,10 @@
 import Fastify from 'fastify';
-import multipart from "@fastify/multipart";
 import cors from "@fastify/cors"
 import fastifyCookie from "@fastify/cookie";
 import pluginS3 from "./config/objectStorage";
 import QueueBullMQ, { repo } from './config/bullmq/QueueBullMQ';
 import IndexRoute from './route';
 import pluginDB from './config/database';
-import { Categorys } from './categorys';
-import { Packer } from 'docx';
-import generateDocx from './lib/generateDocx';
 
 export const fastify = Fastify({
     logger: true,
@@ -35,7 +31,6 @@ fastify.register(pluginS3, {
     bucket: process.env.BUCKET_NAME || "",
     endpoint: process.env.BUCKET_URL || ""
 })
-fastify.register(multipart)
 
 
 fastify.register(QueueBullMQ, {
