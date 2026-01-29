@@ -1,9 +1,23 @@
 services:
   backend:
     build: "./backend"
+    depends_on:
+      - redis
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
 
   frontend:
     build: "./frontend"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
 
   redis:
-    image: redis:7
+    image: redis:alpine
+    command: [ "redis-server", "--requirepass", "VTc6TB7F8rciGV65R7H8JOYVug7f" ]
+    restart: unless-stopped
+
+
+    

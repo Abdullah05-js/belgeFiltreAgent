@@ -40,7 +40,7 @@ fastify.register(QueueBullMQ, {
         port: Number(Bun.env.REDIS_PORT!)
     },
     name: "file",
-    concurrency: 1,
+    concurrency: 3,
 })
 
 

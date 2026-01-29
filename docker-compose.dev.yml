@@ -1,0 +1,42 @@
+services:
+  backend:
+    build: "./backend"
+    develop:
+      watch:
+        - path: ./backend/package.json
+          action: rebuild
+        - path: ./backend/bun.lock
+          action: rebuild
+        - path: ./backend
+          target: /app
+          action: sync
+          ignore:
+            - node_modules/
+    depends_on:
+      - redis
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: "./frontend"
+    develop:
+      watch:
+        - path: ./frontend/package.json
+          action: rebuild
+        - path: ./frontend/bun.lock
+          action: rebuild
+        - path: ./frontend
+          target: /frontend
+          action: sync
+          ignore:
+            - node_modules/
+    ports:
+      - "3000:3000"
+
+  redis:
+    image: redis:alpine
+    env_file:
+      - ./backend/.env
+    command: [ "redis-server", "--requirepass", "VTc6TB7F8rciGV65R7H8JOYVug7f" ]
+
+    

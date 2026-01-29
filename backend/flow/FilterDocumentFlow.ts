@@ -10,7 +10,7 @@ const temperature = 0
 const openai = createMistral({
     apiKey: "yMdLb3wAD2fu959Ik4CHY2s92uKbxicg",
 })
-const model = openai("mistral-large-latest")
+const model = openai("mistral-small-latest")
 
 interface IInput {
     fileURL: string;

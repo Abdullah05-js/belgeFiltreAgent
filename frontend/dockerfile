@@ -1,14 +1,10 @@
-FROM oven/bun:1.3 AS base
+FROM oven/bun:1.3
 WORKDIR /frontend
-
 COPY package.json bun.lock ./
-
 RUN bun install --frozen-lockfile
-
 COPY . .
-
 RUN bun run build
-
 USER bun
 EXPOSE 3000
-CMD ["bun", "run", "start"]
+ENTRYPOINT [ "bun" ]
+CMD ["run", "start"]

@@ -6,7 +6,7 @@ import { repo } from "../bullmq/QueueBullMQ"
 import { Categorys } from "../../categorys";
 import generateDocx from "../../lib/generateDocx";
 import { Packer } from "docx";
-import { fastify } from "../../server";
+import { fastify } from "../../server.ts";
 
 
 export default async function workertest(job: Job<IJob>) {
